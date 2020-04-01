@@ -1,6 +1,3 @@
-var csv = require('csvtojson');
-let fs = require("fs");
-let path = require("path");
 const https = require("https");
 // const url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv';
 const url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv';
@@ -8,7 +5,7 @@ const url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-s
 module.exports.handler = (event, context, callback) => {
         let response;
         // To debug your problem
-        var usJson = {"Province/State":"United States","Country/Region":"US","Lat":"47.4009","Long":"-121.4905","TimeSeries":{"1/22/20":"0","1/23/20":"0","1/24/20":"0","1/25/20":"0","1/26/20":"0","1/27/20":"0"}};
+        var usJson = [];
         https.get(url, function(res) {
             var body = '';
         
@@ -29,6 +26,10 @@ module.exports.handler = (event, context, callback) => {
 
               var stateLineItem;  
               var state;
+
+
+              statesJson["unitedstates"]=[];
+
               for (let i=1;i<inputArray.length;i++)
               {
 
@@ -41,8 +42,20 @@ module.exports.handler = (event, context, callback) => {
                 }
 
                 statesJson[state].push( {date:stateLineItem[0], confirmed: stateLineItem[3]});
+                
+                var x = findElement(usJson, "date", stateLineItem[0]);
+                if (x===undefined)
+                {
+                    usJson.push({date:stateLineItem[0], confirmed: stateLineItem[3]});
+                } 
+                else
+                {
+                    x.confirmed = parseInt(x.confirmed) + parseInt(stateLineItem[3]);
+                }
 
               }    
+              
+              statesJson["unitedstates"] = usJson;
 
               response = {
                       statusCode: 200,
@@ -61,7 +74,13 @@ module.exports.handler = (event, context, callback) => {
       console.log(err);
     });
         
-        
+    function findElement(arr, propName, propValue) {
+      for (var i=0; i < arr.length; i++)
+        if (arr[i][propName] == propValue)
+          return arr[i];
+    
+      // will return undefined if not found; you could return a default instead
+    }
 
 };
 
